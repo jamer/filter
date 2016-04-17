@@ -20,6 +20,6 @@ set(SOURCE_FILES
 )
 add_executable(filters ${SOURCE_FILES})
 
-target_link_libraries(filters "boost_system")
-target_link_libraries(filters "boost_log-mt")
 target_link_libraries(filters "boost_filesystem")
+target_link_libraries(filters "boost_log-mt")
+target_link_libraries(filters "boost_system")
