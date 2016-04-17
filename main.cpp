@@ -1,11 +1,14 @@
-#include <iostream>
-#include "ImageI8.h"
+// Copyright 2016 Paul Merrill
 
-using namespace std;
+#include <boost/log/trivial.hpp>
+
+#include "Image8.h"
 
 int main(int argc, char **argv) {
-    cout << "Hello, World!" << endl;
-    ImageI8 i(argv[1]);
+    BOOST_LOG_TRIVIAL(info) << "Starting";
+
+    Image8 i(argv[1]);
     i.write("out.bmp");
+
     return 0;
 }
