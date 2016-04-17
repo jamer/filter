@@ -3,6 +3,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
+#include <chrono>
 #include <string>
 
 #include "DirectoryTransform.h"
@@ -11,10 +12,32 @@ using boost::filesystem::create_directories;
 using boost::filesystem::directory_iterator;
 using boost::filesystem::path;
 using boost::filesystem::remove_all;
+using std::chrono::duration;
+using std::chrono::high_resolution_clock;
+using std::chrono::time_point;
 using std::string;
+using std::to_string;
 
-static bool isImageFileName(string path)
-{
+class OperationTimer {
+ public:
+    OperationTimer() {
+        begin = high_resolution_clock::now();
+    }
+
+    ~OperationTimer() {
+        time_point<high_resolution_clock> finish = high_resolution_clock::now();
+        duration<double> elapsedSeconds = finish - begin;
+
+        string message = "[DirectoryTransform] Operation took " +
+                to_string(elapsedSeconds.count()) + " seconds";
+        BOOST_LOG_TRIVIAL(info) << message;
+    }
+
+ private:
+    time_point<high_resolution_clock> begin;
+};
+
+static bool isImageFileName(string path) {
     size_t dot = path.rfind(".");
     if (dot == string::npos) {
         return false;
@@ -25,15 +48,31 @@ static bool isImageFileName(string path)
            extension == ".bmp";
 }
 
-static void clearDirectory(path path)
-{
+static string changeFileExtention(string filename, string newExtension) {
+    size_t dot = filename.rfind(".");
+    if (dot == string::npos) {
+        return filename + "." + newExtension;
+    } else {
+        return filename.substr(0, dot + 1) + newExtension;
+    }
+}
+
+static void clearDirectory(string path) {
     remove_all(path);
     create_directories(path);
 }
 
 void directoryTransform(string sourceDir, string destinationDir,
-                        ImageTransform operation)
-{
+                        ImageTransform operation) {
+    assert(sourceDir.size() && destinationDir.size());
+
+    if (sourceDir[sourceDir.size() - 1] != '/') {
+        sourceDir += '/';
+    }
+    if (destinationDir[destinationDir.size() - 1] != '/') {
+        destinationDir += '/';
+    }
+
     bool clearedDestinationDirectory = false;
 
     directory_iterator itr(sourceDir);
@@ -51,14 +90,20 @@ void directoryTransform(string sourceDir, string destinationDir,
         BOOST_LOG_TRIVIAL(info) << message;
 
         Image8 originalImage(inputPath.string());
-        Image8 modifiedImage = operation(originalImage);
+        Image8 modifiedImage;
+
+        {
+            OperationTimer timer;
+            modifiedImage = operation(std::move(originalImage));
+        }
 
         if (!clearedDestinationDirectory) {
             clearDirectory(destinationDir);
             clearedDestinationDirectory = true;
         }
 
-        string outputPath = destinationDir + relativePath;
+        string outputPath = destinationDir +
+                changeFileExtention(relativePath, "bmp");
         modifiedImage.write(outputPath);
     }
 }
