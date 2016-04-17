@@ -12,6 +12,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${NATIVE_OPTIMIZATIONS_F
 set(SOURCE_FILES
   src/DirectoryTransform.cpp
   src/filters/PointFilter.cpp
+  src/filters/point-filters/ColorOverlay.cpp
   src/filters/point-filters/Fill.cpp
   src/Image8.cpp
   src/main.cpp

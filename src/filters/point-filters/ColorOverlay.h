@@ -1,0 +1,10 @@
+// Copyright 2016 Paul Merrill
+
+#ifndef SRC_FILTERS_POINT_FILTERS_COLOR_OVERLAY_H_
+#define SRC_FILTERS_POINT_FILTERS_COLOR_OVERLAY_H_
+
+#include "../PointFilter.h"
+
+PointFilter makeColorOverlayFilter(rgb color, float alpha);
+
+#endif  // SRC_FILTERS_POINT_FILTERS_COLOR_OVERLAY_H_

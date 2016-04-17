@@ -14,6 +14,22 @@ struct rgb {
     uint8_t r;
     uint8_t g;
     uint8_t b;
+
+    rgb operator*(float f) const {
+        rgb pixel = *this;
+        pixel.r *= f;
+        pixel.g *= f;
+        pixel.b *= f;
+        return pixel;
+    }
+
+    rgb operator+(const rgb& other) const {
+        rgb pixel = *this;
+        pixel.r += other.r;
+        pixel.g += other.g;
+        pixel.b += other.b;
+        return pixel;
+    }
 };
 
 class Image8 {

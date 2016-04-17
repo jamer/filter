@@ -9,4 +9,3 @@ PointFilter makeFillFilter(rgb color) {
         return color;
     };
 }
-
