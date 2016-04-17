@@ -6,7 +6,7 @@ public:
     ImageI8(const char *filename);
     ~ImageI8();
 
-    void save(const char *filename);
+    void write(const char *filename);
 
 private:
     int w, h;
