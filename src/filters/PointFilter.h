@@ -8,8 +8,14 @@
 
 #include "../Image8.h"
 
+enum ParallelismPolicy {
+    PP_SINGLE_THREADED,
+    PP_MULTI_THREADED
+};
+
 typedef std::function<rgb(rgb)> PointFilter;
 
-Image8 runPointFilter(Image8 image, PointFilter filter);
+Image8 runPointFilter(Image8 image, PointFilter filter,
+                      ParallelismPolicy policy);
 
 #endif  // SRC_FILTERS_POINTFILTER_H_

@@ -5,7 +5,7 @@
 #include "Fill.h"
 
 PointFilter makeFillFilter(rgb color) {
-    return [](rgb pixel) {
+    return [color](rgb pixel) {
         return color;
     };
 }

@@ -1,10 +1,10 @@
 // Copyright 2016 Paul Merrill
 
+#include <chrono>
+#include <string>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
-#include <chrono>
-#include <string>
 
 #include "DirectoryTransform.h"
 

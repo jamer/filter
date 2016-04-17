@@ -1,7 +1,7 @@
 // Copyright 2016 Paul Merrill
 
-#include <boost/log/trivial.hpp>
 #include <utility>
+#include <boost/log/trivial.hpp>
 
 #include "DirectoryTransform.h"
 #include "Image8.h"
@@ -16,7 +16,8 @@ int main(int argc, char **argv) {
                        [](Image8 img) {
                            rgb red = {255, 0, 0};
                            PointFilter fill = makeFillFilter(red);
-                           return runPointFilter(move(img), fill);
+                           ParallelismPolicy policy = PP_MULTI_THREADED;
+                           return runPointFilter(move(img), fill, policy);
                        });
 
     BOOST_LOG_TRIVIAL(info) << "[main] Finished";
