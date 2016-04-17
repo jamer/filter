@@ -13,11 +13,12 @@
 Image8::Image8() {
     w = 0;
     h = 0;
-    data = nullptr;
+    pixels = nullptr;
 }
 
 Image8::Image8(string filename) {
     int width, height, components;
+    stbi_uc *data;
 
     data = stbi_load(filename.c_str(), &width, &height, &components, 3);
 
@@ -29,6 +30,7 @@ Image8::Image8(string filename) {
 
     w = static_cast<uint32_t>(width);
     h = static_cast<uint32_t>(height);
+    pixels = reinterpret_cast<rgb *>(data);
 }
 
 Image8::Image8(Image8&& other) {
@@ -42,11 +44,11 @@ Image8::Image8(const Image8& other) {
 Image8& Image8::operator=(Image8&& other) {
     w = other.w;
     h = other.h;
-    data = other.data;
+    pixels = other.pixels;
 
     other.w = 0;
     other.h = 0;
-    other.data = nullptr;
+    other.pixels = nullptr;
 
     return *this;
 }
@@ -57,23 +59,25 @@ Image8& Image8::operator=(const Image8& other) {
     w = other.w;
     h = other.h;
 
-    size_t dataLength = w * h * 3;
-    data = static_cast<uint8_t *>(malloc(dataLength));
-    memcpy(data, other.data, dataLength);
+    size_t dataLength = w * h * sizeof(rgb);
+    pixels = reinterpret_cast<rgb *>(malloc(dataLength));
+    memcpy(pixels, other.pixels, dataLength);
 
     return *this;
 }
 
 Image8::~Image8() {
-    if (data) {
-        stbi_image_free(static_cast<stbi_uc *>(data));
-        data = nullptr;
+    if (pixels) {
+        stbi_uc *data = reinterpret_cast<stbi_uc *>(pixels);
+        stbi_image_free(data);
+        pixels = nullptr;
     }
 }
 
 void Image8::write(string filename) {
-    assert(data);
+    assert(pixels);
 
+    stbi_uc *data = reinterpret_cast<stbi_uc *>(pixels);
     int ok = stbi_write_bmp(filename.c_str(), w, h, 3, data);
     assert(ok);
 }

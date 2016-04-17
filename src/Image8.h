@@ -10,6 +10,12 @@
 using std::string;
 using std::unique_ptr;
 
+struct rgb {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+};
+
 class Image8 {
  public:
     Image8();
@@ -24,7 +30,7 @@ class Image8 {
     void write(string filename);
 
     uint32_t w, h;
-    uint8_t *data;
+    rgb *pixels;
 };
 
 #endif  // SRC_IMAGE8_H_

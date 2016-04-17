@@ -3,8 +3,9 @@
 #ifndef SRC_DIRECTORYTRANSFORM_H_
 #define SRC_DIRECTORYTRANSFORM_H_
 
-#include <string>
 #include <functional>
+#include <string>
+
 #include "Image8.h"
 
 typedef std::function<Image8(Image8)> ImageTransform;
