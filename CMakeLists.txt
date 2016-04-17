@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.3)
 project(filters)
 
-set(CMAKE_BUILD_TYPE Debug)
-
 set(CXX_VERSION_FLAGS "-std=c++1z")
 set(DYNAMICALLY_LINK_BOOST_LOG "-DBOOST_LOG_DYN_LINK")
 set(NATIVE_OPTIMIZATIONS_FLAGS "-march=native -mtune=native")
