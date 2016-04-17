@@ -12,11 +12,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DYNAMICALLY_LINK_BOOST_LOG}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${NATIVE_OPTIMIZATIONS_FLAGS}")
 
 set(SOURCE_FILES
-  DirectoryTransform.cpp
-  Image8.cpp
-  main.cpp
-  stb_image/stb_image_impl.cpp
-  stb_image/stb_image_write_impl.cpp
+  src/DirectoryTransform.cpp
+  src/Image8.cpp
+  src/main.cpp
+  src/stb_image/stb_image_impl.cpp
+  src/stb_image/stb_image_write_impl.cpp
 )
 add_executable(filters ${SOURCE_FILES})
 
