@@ -5,8 +5,8 @@
 #include <cassert>
 #include <string>
 
-#include "./stb_image.h"
-#include "./stb_image_write.h"
+#include "stb_image/stb_image.h"
+#include "stb_image/stb_image_write.h"
 
 #include "Image8.h"
 

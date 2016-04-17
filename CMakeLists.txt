@@ -15,8 +15,8 @@ set(SOURCE_FILES
   DirectoryTransform.cpp
   Image8.cpp
   main.cpp
-  stb_image_impl.cpp
-  stb_image_write_impl.cpp
+  stb_image/stb_image_impl.cpp
+  stb_image/stb_image_write_impl.cpp
 )
 add_executable(filters ${SOURCE_FILES})
 
