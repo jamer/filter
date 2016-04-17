@@ -1,10 +1,10 @@
 #include <iostream>
-#include "Image.h"
+#include "ImageI8.h"
 
 using namespace std;
 
 int main(int argc, char **argv) {
     cout << "Hello, World!" << endl;
-    Image i(argv[1]);
+    ImageI8 i(argv[1]);
     return 0;
 }
