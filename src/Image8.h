@@ -1,7 +1,7 @@
 // Copyright 2016 Paul Merrill
 
-#ifndef IMAGE8_H_
-#define IMAGE8_H_
+#ifndef SRC_IMAGE8_H_
+#define SRC_IMAGE8_H_
 
 #include <cstdint>
 #include <memory>
@@ -23,9 +23,8 @@ class Image8 {
 
     void write(string filename);
 
- private:
     uint32_t w, h;
     uint8_t *data;
 };
 
-#endif  // IMAGE8_H_
+#endif  // SRC_IMAGE8_H_

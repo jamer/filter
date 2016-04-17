@@ -52,6 +52,8 @@ Image8& Image8::operator=(Image8&& other) {
 }
 
 Image8& Image8::operator=(const Image8& other) {
+    BOOST_LOG_TRIVIAL(warning) << "[Image8] Copying an image";
+
     w = other.w;
     h = other.h;
 
