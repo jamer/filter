@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <memory>
 #include <string>
 
 #include "stb_image/stb_image.h"
@@ -9,6 +10,8 @@
 
 #include "Image8.h"
 #include "Log.h"
+
+using std::move;
 
 Image8::Image8() {
     w = 0;
@@ -34,7 +37,7 @@ Image8::Image8(string filename) {
 }
 
 Image8::Image8(Image8&& other) {
-    *this = std::move(other);
+    *this = move(other);
 }
 
 Image8::Image8(const Image8& other) {
