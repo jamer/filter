@@ -20,6 +20,7 @@ set(SOURCE_FILES
   src/filters/point-filters/ColorOverlay.cpp
   src/filters/point-filters/Fill.cpp
   src/filters/point-filters/Grayscale.cpp
+  src/filters/point-filters/Sepia.cpp
   src/Image8.cpp
   src/Log.cpp
   src/main.cpp
@@ -31,4 +32,3 @@ add_executable(filters ${SOURCE_FILES})
 
 target_link_libraries(filters "boost_filesystem")
 target_link_libraries(filters "boost_system")
-target_link_libraries(filters "${OMPI_LIBRARIES}")

@@ -6,7 +6,7 @@
 #include "Image8.h"
 #include "MPIHelper.h"
 #include "Log.h"
-#include "filters/point-filters/Grayscale.h"
+#include "filters/point-filters/Sepia.h"
 
 using std::move;
 
@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
 
     directoryTransform("test-images", "output-images",
                        [](Image8 img) {
-                           PointFilter overlay = makeGrayscaleFilter();
+                           PointFilter overlay = makeSepiaFilter();
                            ParallelismPolicy policy = PP_CXX_STD_THREAD;
                            return runPointFilter(move(img), overlay, policy);
                        });
