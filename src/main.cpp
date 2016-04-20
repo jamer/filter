@@ -30,7 +30,7 @@ Image8 boxBlur(Image8 img) {
     ParallelismPolicy parallelismPolicy = PP_SINGLE_THREAD;
     EdgePolicy edgePolicy = EP_CLAMP;
 
-    Kernel boxBlur = makeBoxBlur(1);
+    Kernel boxBlur = makeBoxBlur(2);
     return runLocal2DFilter(move(img), boxBlur, parallelismPolicy, edgePolicy);
 }
 

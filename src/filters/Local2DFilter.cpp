@@ -53,7 +53,9 @@ static rgb convolutePixel(uint32_t w, uint32_t h, rgb *source,
                           uint32_t destX, uint32_t destY) {
     int kernelRadius = (kernel.dimension - 1) / 2;
 
-    rgb destPixel{0, 0, 0};
+    float r = 0.f;
+    float g = 0.f;
+    float b = 0.f;
 
     for (int32_t y = -kernelRadius; y <= kernelRadius; y++) {
         for (int32_t x = -kernelRadius; x <= kernelRadius; x++) {
@@ -63,11 +65,17 @@ static rgb convolutePixel(uint32_t w, uint32_t h, rgb *source,
             int32_t sourceY = destY + y;
             rgb sourcePixel = getPixel(w, h, source, edgePolicy,
                                        sourceX, sourceY);
-            destPixel += sourcePixel * coefficient;
+            r += sourcePixel.r * coefficient;
+            g += sourcePixel.g * coefficient;
+            b += sourcePixel.b * coefficient;
         }
     }
 
-    return destPixel;
+    return rgb{
+        static_cast<uint8_t>(r),
+        static_cast<uint8_t>(g),
+        static_cast<uint8_t>(b)
+    };
 }
 
 static Image8 convoluteImage(uint32_t w, uint32_t h, rgb *source,

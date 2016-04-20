@@ -5,7 +5,7 @@
 Kernel makeBoxBlur(int radius) {
     int dimension = radius * 2 + 1;
     int numElements = dimension * dimension;
-    float coefficient = 1.0 / numElements;
+    float coefficient = 1.0f / numElements;
     float *values = new float[numElements];
     for (int i = 0; i < numElements; i++) {
         values[i] = coefficient;
