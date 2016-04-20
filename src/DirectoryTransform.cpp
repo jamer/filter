@@ -7,6 +7,7 @@
 
 #include "DirectoryTransform.h"
 #include "Log.h"
+#include "MPIHelper.h"
 
 using boost::filesystem::create_directories;
 using boost::filesystem::directory_iterator;
@@ -62,10 +63,8 @@ static void clearDirectory(string path) {
     create_directories(path);
 }
 
-void directoryTransform(string sourceDir, string destinationDir,
-                        ImageTransform operation) {
-    assert(sourceDir.size() && destinationDir.size());
-
+static void directoryTransformMaster(string sourceDir, string destinationDir,
+                                     ImageTransform operation) {
     if (sourceDir[sourceDir.size() - 1] != '/') {
         sourceDir += '/';
     }
@@ -105,5 +104,33 @@ void directoryTransform(string sourceDir, string destinationDir,
         string outputPath = destinationDir +
                 changeFileExtention(relativePath, "bmp");
         modifiedImage.write(outputPath);
+    }
+}
+
+static void directoryTransformSlave(string sourceDir,
+                                    ImageTransform operation) {
+    directory_iterator itr(sourceDir);
+    directory_iterator end_itr;
+
+    for (; itr != end_itr; ++itr) {
+        path inputPath = itr->path();
+        if (!isImageFileName(inputPath.string())) {
+            continue;
+        }
+
+        operation(Image8());
+    }
+}
+
+void directoryTransform(string sourceDir, string destinationDir,
+                        ImageTransform operation) {
+    assert(sourceDir.size() && destinationDir.size());
+
+    int processId = mpiHelper.myProcessId();
+
+    if (processId == MPI_MASTER_PROCESS_ID) {
+        directoryTransformMaster(sourceDir, destinationDir, operation);
+    } else {
+        directoryTransformSlave(sourceDir, operation);
     }
 }

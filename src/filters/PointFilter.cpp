@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <mpi.h>
 #include <omp.h>
 #include <string>
 #include <thread>
@@ -9,6 +10,7 @@
 #include <vector>
 
 #include "../Log.h"
+#include "../MPIHelper.h"
 #include "PointFilter.h"
 
 using std::move;
@@ -19,6 +21,8 @@ using std::to_string;
 using std::vector;
 
 Image8 runPointFilterSingleThreaded(Image8 image, PointFilter filter) {
+    log("[PointFilter] Executing single threaded");
+
     uint32_t w = image.w;
     uint32_t h = image.h;
     rgb *pixels = image.pixels;
@@ -37,9 +41,8 @@ Image8 runPointFilterMultiThreadedWithSharedMemory(Image8 image,
                                                    PointFilter filter) {
     unsigned threadCount = thread::hardware_concurrency();
 
-    string message = "[PointFilter] Starting " + to_string(threadCount) +
-                     " threads";
-    log(message);
+    log("[PointFilter] Parallelizing with C++ std::thread");
+    log("[PointFilter] Starting " + to_string(threadCount) + " threads");
 
     uint32_t w = image.w;
     uint32_t h = image.h;
@@ -77,9 +80,8 @@ Image8 runPointFilterMultiThreadedWithSharedMemory(Image8 image,
 Image8 runPointFilterWithOpenMP(Image8 image, PointFilter filter) {
     int threadCount = omp_get_max_threads();
 
-    string message = "[PointFilter] Starting " + to_string(threadCount) +
-                     " threads";
-    log(message);
+    log("[PointFilter] Parallelizing with OpenMP");
+    log("[PointFilter] Starting " + to_string(threadCount) + " threads");
 
     uint32_t w = image.w;
     uint32_t h = image.h;
@@ -106,8 +108,115 @@ Image8 runPointFilterWithOpenMP(Image8 image, PointFilter filter) {
     return move(image);
 }
 
+static Image8 runPointFilterWithMPIMaster(Image8 image, PointFilter filter) {
+    int processCount = mpiHelper.processCount();
+
+    log("[PointFilter] Parallelizing with MPIHelper");
+    log("[PointFilter] Using " + to_string(processCount) + " processes");
+
+    uint32_t w = image.w;
+    uint32_t h = image.h;
+    rgb *pixels = image.pixels;
+
+    size_t pixelCount = w * h;
+    size_t pixelsPerThread = pixelCount / processCount;
+
+    for (int slaveId = 1; slaveId < processCount; slaveId++) {
+        size_t offset = pixelsPerThread * slaveId;
+        size_t limit = pixelsPerThread;
+
+        if (slaveId == processCount - 1) {
+            limit = pixelCount - offset;
+        }
+
+        rgb *slaveBegin = pixels + offset;
+        // rgb *slaveEnd = pixels + offset + limit;
+
+        mpiHelper.sendToSlave(slaveId, w);
+        mpiHelper.sendToSlave(slaveId, h);
+        mpiHelper.sendToSlave(slaveId, slaveBegin, limit);
+    }
+
+    size_t masterOffset = pixelsPerThread * 0;
+    size_t masterLimit = pixelsPerThread;
+
+    rgb *masterBegin = pixels + masterOffset;
+    rgb *masterEnd = pixels + masterOffset + masterLimit;
+
+    transform(masterBegin, masterEnd, masterBegin, filter);
+
+    for (int slaveId = 1; slaveId < processCount; slaveId++) {
+        size_t offset = pixelsPerThread * slaveId;
+        size_t limit = pixelsPerThread;
+
+        if (slaveId == processCount - 1) {
+            limit = pixelCount - offset;
+        }
+
+        rgb *slaveBegin = pixels + offset;
+        // rgb *slaveEnd = pixels + offset + limit;
+
+        mpiHelper.receiveFromSlave(slaveId, slaveBegin, limit);
+    }
+
+    return move(image);
+}
+
+static void runPointFilterWithMPISlave(PointFilter filter) {
+    int slaveId = mpiHelper.myProcessId();
+    int processCount = mpiHelper.processCount();
+
+    uint32_t w;
+    uint32_t h;
+
+    mpiHelper.receiveFromMaster(&w);
+    mpiHelper.receiveFromMaster(&h);
+
+    size_t pixelCount = w * h;
+    size_t pixelsPerThread = pixelCount / processCount;
+    rgb *pixels = new rgb[w * h];
+
+    size_t offset = pixelsPerThread * slaveId;
+    size_t limit = pixelsPerThread;
+
+    if (slaveId == processCount - 1) {
+        limit = pixelCount - offset;
+    }
+
+    rgb *slaveBegin = pixels + offset;
+    rgb *slaveEnd = pixels + offset + limit;
+
+    mpiHelper.receiveFromMaster(slaveBegin, limit);
+
+    transform(slaveBegin, slaveEnd, slaveBegin, filter);
+
+    mpiHelper.sendToMaster(slaveBegin, limit);
+
+    delete pixels;
+}
+
+Image8 runPointFilterWithMPI(Image8 image, PointFilter filter) {
+    int processId = mpiHelper.myProcessId();
+    if (processId == MPI_MASTER_PROCESS_ID) {
+        return runPointFilterWithMPIMaster(std::move(image), filter);
+    } else {
+        runPointFilterWithMPISlave(filter);
+        return std::move(image);
+    }
+}
+
 Image8 runPointFilter(Image8 image, PointFilter filter,
                       ParallelismPolicy policy) {
+    if (policy != PP_MPI) {
+        // MPI spawns multiple processes for us even if we're not going to use
+        // them in this filter. Only let one process tackle filtering this
+        // image.
+        int processId = mpiHelper.myProcessId();
+        if (processId != MPI_MASTER_PROCESS_ID) {
+            return std::move(image);
+        }
+    }
+
     switch (policy) {
     case PP_SINGLE_THREAD:
         return runPointFilterSingleThreaded(move(image), filter);
@@ -115,6 +224,8 @@ Image8 runPointFilter(Image8 image, PointFilter filter,
         return runPointFilterMultiThreadedWithSharedMemory(move(image), filter);
     case PP_OPEN_MP:
         return runPointFilterWithOpenMP(move(image), filter);
+    case PP_MPI:
+        return runPointFilterWithMPI(move(image), filter);
     default:
         throw "Unknown parallelism policy";
     }

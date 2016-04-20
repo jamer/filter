@@ -7,12 +7,7 @@
 #include <functional>
 
 #include "../Image8.h"
-
-enum ParallelismPolicy {
-    PP_SINGLE_THREAD,
-    PP_CXX_STD_THREAD,
-    PP_OPEN_MP
-};
+#include "../ParallelismPolicy.h"
 
 typedef std::function<rgb(rgb)> PointFilter;
 

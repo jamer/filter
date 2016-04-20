@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.3)
 project(filters)
 
+# Set to your location for mpic++
+#set(CMAKE_CXX_COMPILER "mpic++")
+
 set(CXX_VERSION_FLAGS "-std=c++1z")
 set(NATIVE_OPTIMIZATIONS_FLAGS "-march=native -mtune=native")
 
@@ -19,6 +22,7 @@ set(SOURCE_FILES
   src/Image8.cpp
   src/Log.cpp
   src/main.cpp
+  src/MPIHelper.cpp
   src/stb_image/stb_image_impl.cpp
   src/stb_image/stb_image_write_impl.cpp
 )
@@ -26,3 +30,4 @@ add_executable(filters ${SOURCE_FILES})
 
 target_link_libraries(filters "boost_filesystem")
 target_link_libraries(filters "boost_system")
+target_link_libraries(filters "${OMPI_LIBRARIES}")

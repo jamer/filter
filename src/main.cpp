@@ -4,6 +4,7 @@
 
 #include "DirectoryTransform.h"
 #include "Image8.h"
+#include "MPIHelper.h"
 #include "Log.h"
 #include "filters/point-filters/ColorOverlay.h"
 
@@ -17,7 +18,7 @@ int main(int argc, char **argv) {
                            rgb red = {255, 0, 0};
                            PointFilter overlay = makeColorOverlayFilter(red,
                                                                         0.4);
-                           ParallelismPolicy policy = PP_OPEN_MP;
+                           ParallelismPolicy policy = PP_MPI;
                            return runPointFilter(move(img), overlay, policy);
                        });
 

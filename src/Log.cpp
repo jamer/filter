@@ -7,6 +7,7 @@
 #include <string>
 
 #include "Log.h"
+#include "MPIHelper.h"
 
 using std::chrono::duration;
 using std::chrono::duration_cast;
@@ -43,8 +44,11 @@ static string to_string(time_point<high_resolution_clock> time_point_time) {
 }
 
 void log(string message) {
+    int processId = mpiHelper.myProcessId();
+
     time_point<high_resolution_clock> now = high_resolution_clock::now();
 
-    string line = "[" + to_string(now) + "] " + message;
+    string line = "[" + to_string(now) + "] [#" + std::to_string(processId)
+        + "] " + message;
     cout << line << endl;
 }

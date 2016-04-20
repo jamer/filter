@@ -54,6 +54,7 @@ Image8& Image8::operator=(Image8&& other) {
 }
 
 Image8& Image8::operator=(const Image8& other) {
+    // It's unlike that we want to do this.
     log("[Image8] Copying an image");
 
     w = other.w;
