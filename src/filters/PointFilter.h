@@ -10,7 +10,8 @@
 
 enum ParallelismPolicy {
     PP_SINGLE_THREADED,
-    PP_MULTI_THREADED
+    PP_MULTI_THREADED,
+    PP_OPEN_MP
 };
 
 typedef std::function<rgb(rgb)> PointFilter;

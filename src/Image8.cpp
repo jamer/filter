@@ -1,14 +1,14 @@
 // Copyright 2016 Paul Merrill
 
-#include <boost/log/trivial.hpp>
-
 #include <cassert>
+#include <cstring>
 #include <string>
 
 #include "stb_image/stb_image.h"
 #include "stb_image/stb_image_write.h"
 
 #include "Image8.h"
+#include "Log.h"
 
 Image8::Image8() {
     w = 0;
@@ -23,7 +23,7 @@ Image8::Image8(string filename) {
     data = stbi_load(filename.c_str(), &width, &height, &components, 3);
 
     if (components != 3) {
-        BOOST_LOG_TRIVIAL(info) << "[Image8] Number of image components not 3";
+        log("[Image8] Number of image components not 3");
     }
 
     assert(width >= 0 && height >= 0 && data);
@@ -54,7 +54,7 @@ Image8& Image8::operator=(Image8&& other) {
 }
 
 Image8& Image8::operator=(const Image8& other) {
-    BOOST_LOG_TRIVIAL(warning) << "[Image8] Copying an image";
+    log("[Image8] Copying an image");
 
     w = other.w;
     h = other.h;

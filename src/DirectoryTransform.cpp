@@ -4,9 +4,9 @@
 #include <string>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/log/trivial.hpp>
 
 #include "DirectoryTransform.h"
+#include "Log.h"
 
 using boost::filesystem::create_directories;
 using boost::filesystem::directory_iterator;
@@ -30,7 +30,7 @@ class OperationTimer {
 
         string message = "[DirectoryTransform] Operation took " +
                 to_string(elapsedSeconds.count()) + " seconds";
-        BOOST_LOG_TRIVIAL(info) << message;
+        log(message);
     }
 
  private:
@@ -87,7 +87,7 @@ void directoryTransform(string sourceDir, string destinationDir,
         }
 
         string message = "[DirectoryTransform] Processing " + relativePath;
-        BOOST_LOG_TRIVIAL(info) << message;
+        log(message);
 
         Image8 originalImage(inputPath.string());
         Image8 modifiedImage;

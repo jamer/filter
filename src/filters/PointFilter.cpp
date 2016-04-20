@@ -2,11 +2,12 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <omp.h>
 #include <string>
 #include <thread>
 #include <vector>
-#include <boost/log/trivial.hpp>
 
+#include "../Log.h"
 #include "PointFilter.h"
 
 using std::string;
@@ -36,7 +37,7 @@ Image8 runPointFilterMultiThreadedWithSharedMemory(Image8 image,
 
     string message = "[PointFilter] Starting " + to_string(threadCount) +
                      " threads";
-    BOOST_LOG_TRIVIAL(info) << message;
+    log(message);
 
     uint32_t w = image.w;
     uint32_t h = image.h;
@@ -71,6 +72,38 @@ Image8 runPointFilterMultiThreadedWithSharedMemory(Image8 image,
     return std::move(image);
 }
 
+Image8 runPointFilterWithOpenMP(Image8 image, PointFilter filter) {
+    int threadCount = omp_get_max_threads();
+
+    string message = "[PointFilter] Starting " + to_string(threadCount) +
+                     " threads";
+    log(message);
+
+    uint32_t w = image.w;
+    uint32_t h = image.h;
+    rgb *pixels = image.pixels;
+
+    size_t pixelCount = w * h;
+    size_t pixelsPerThread = pixelCount / threadCount;
+
+    #pragma omp parallel for
+    for (int threadId = 0; threadId < threadCount; threadId++) {
+        size_t offset = pixelsPerThread * threadId;
+        size_t limit = pixelsPerThread;
+
+        if (threadId == threadCount - 1) {
+            limit = pixelCount - offset;
+        }
+
+        rgb *begin = pixels + offset;
+        rgb *end = pixels + offset + limit;
+
+        transform(begin, end, begin, filter);
+    }
+
+    return std::move(image);
+}
+
 Image8 runPointFilter(Image8 image, PointFilter filter,
                       ParallelismPolicy policy) {
     switch (policy) {
@@ -79,6 +112,8 @@ Image8 runPointFilter(Image8 image, PointFilter filter,
     case PP_MULTI_THREADED:
         return runPointFilterMultiThreadedWithSharedMemory(std::move(image),
                                                            filter);
+    case PP_OPEN_MP:
+        return runPointFilterWithOpenMP(std::move(image), filter);
     default:
         throw "Unknown parallelism policy";
     }
