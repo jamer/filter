@@ -37,8 +37,7 @@ Image8 runPointFilterSingleThreaded(Image8 image, PointFilter filter) {
     return move(image);
 }
 
-Image8 runPointFilterMultiThreadedWithSharedMemory(Image8 image,
-                                                   PointFilter filter) {
+Image8 runPointFilterWithStdThread(Image8 image, PointFilter filter) {
     unsigned threadCount = thread::hardware_concurrency();
 
     log("[PointFilter] Parallelizing with C++ std::thread");
@@ -221,7 +220,7 @@ Image8 runPointFilter(Image8 image, PointFilter filter,
     case PP_SINGLE_THREAD:
         return runPointFilterSingleThreaded(move(image), filter);
     case PP_CXX_STD_THREAD:
-        return runPointFilterMultiThreadedWithSharedMemory(move(image), filter);
+        return runPointFilterWithStdThread(move(image), filter);
     case PP_OPEN_MP:
         return runPointFilterWithOpenMP(move(image), filter);
     case PP_MPI:

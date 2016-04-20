@@ -19,6 +19,7 @@ set(SOURCE_FILES
   src/filters/PointFilter.cpp
   src/filters/point-filters/ColorOverlay.cpp
   src/filters/point-filters/Fill.cpp
+  src/filters/point-filters/Grayscale.cpp
   src/Image8.cpp
   src/Log.cpp
   src/main.cpp

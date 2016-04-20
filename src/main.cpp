@@ -6,7 +6,7 @@
 #include "Image8.h"
 #include "MPIHelper.h"
 #include "Log.h"
-#include "filters/point-filters/ColorOverlay.h"
+#include "filters/point-filters/Grayscale.h"
 
 using std::move;
 
@@ -15,10 +15,8 @@ int main(int argc, char **argv) {
 
     directoryTransform("test-images", "output-images",
                        [](Image8 img) {
-                           rgb red = {255, 0, 0};
-                           PointFilter overlay = makeColorOverlayFilter(red,
-                                                                        0.4);
-                           ParallelismPolicy policy = PP_MPI;
+                           PointFilter overlay = makeGrayscaleFilter();
+                           ParallelismPolicy policy = PP_CXX_STD_THREAD;
                            return runPointFilter(move(img), overlay, policy);
                        });
 
