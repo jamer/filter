@@ -14,6 +14,7 @@ struct rgb {
 
     rgb operator*(float f) const;
     rgb operator+(const rgb& other) const;
+    rgb& operator+=(const rgb& other);
 
     hsv toHSV();
 };

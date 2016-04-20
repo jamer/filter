@@ -13,6 +13,7 @@ using std::string;
 class Image8 {
  public:
     Image8();
+    Image8(uint32_t w, uint32_t h);
     explicit Image8(string filename);
     Image8(Image8&& other);
     Image8(const Image8& other);

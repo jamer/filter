@@ -1,6 +1,7 @@
 // Copyright 2016 Paul Merrill
 
 #include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <mpi.h>
 #include <omp.h>
@@ -11,8 +12,10 @@
 
 #include "../Log.h"
 #include "../MPIHelper.h"
-#include "PointFilter.h"
+#include "Local2DFilter.h"
 
+using std::max;
+using std::min;
 using std::move;
 using std::string;
 using std::thread;
@@ -20,28 +23,81 @@ using std::transform;
 using std::to_string;
 using std::vector;
 
-Image8 runPointFilterSingleThreaded(Image8 image, PointFilter filter) {
-    log("[PointFilter] Executing single threaded");
+static rgb getPixel(uint32_t w, uint32_t h, rgb *source, EdgePolicy edgePolicy,
+                    int32_t x, int32_t y) {
+    int32_t inBoundsX = x;
+    int32_t inBoundsY = y;
+    inBoundsX = max(inBoundsX, 0);
+    inBoundsY = max(inBoundsY, 0);
+    inBoundsX = min(inBoundsX, static_cast<int32_t>(w) - 1);
+    inBoundsY = min(inBoundsY, static_cast<int32_t>(h) - 1);
 
-    uint32_t w = image.w;
-    uint32_t h = image.h;
-    rgb *pixels = image.pixels;
+    if (x != inBoundsX || y != inBoundsY) {
+        switch (edgePolicy) {
+        case EP_CLAMP:
+            return source[inBoundsY * w + inBoundsX];
+        case EP_WRAP:
+            // TODO(pdm): Unimplemented due to considerations with
+            //            multiprocessing.
+            return rgb{0, 0, 0};
+        case EP_CLIP:
+            return rgb{0, 0, 0};
+        }
+    }
 
-    size_t pixelCount = w * h;
-
-    rgb *begin = pixels;
-    rgb *end = pixels + pixelCount;
-
-    transform(begin, end, begin, filter);
-
-    return move(image);
+    return source[y * w + x];
 }
 
-Image8 runPointFilterWithStdThread(Image8 image, PointFilter filter) {
+static rgb convolutePixel(uint32_t w, uint32_t h, rgb *source,
+                          const Kernel& kernel, EdgePolicy edgePolicy,
+                          uint32_t destX, uint32_t destY) {
+    int kernelRadius = (kernel.dimension - 1) / 2;
+
+    rgb destPixel{0, 0, 0};
+
+    for (int32_t y = -kernelRadius; y <= kernelRadius; y++) {
+        for (int32_t x = -kernelRadius; x <= kernelRadius; x++) {
+            float coefficient = kernel.value(kernelRadius + x,
+                                             kernelRadius + y);
+            int32_t sourceX = destX + x;
+            int32_t sourceY = destY + y;
+            rgb sourcePixel = getPixel(w, h, source, edgePolicy,
+                                       sourceX, sourceY);
+            destPixel += sourcePixel * coefficient;
+        }
+    }
+
+    return destPixel;
+}
+
+static Image8 convoluteImage(uint32_t w, uint32_t h, rgb *source,
+                             const Kernel& kernel, EdgePolicy edgePolicy,
+                             uint32_t initialY, uint32_t finalY) {
+    Image8 destination(w, h);
+    for (uint32_t y = initialY; y < finalY; y++) {
+        for (uint32_t x = 0; x < w; x++) {
+            destination.pixels[y * w + x] = convolutePixel(w, h, source, kernel,
+                                                           edgePolicy, x, y);
+        }
+    }
+    return move(destination);
+}
+
+Image8 runLocal2DFilterSingleThreaded(Image8 source, Kernel kernel,
+                                      EdgePolicy edgePolicy) {
+    log("[Local2DFilter] Executing single threaded");
+
+    uint32_t w = source.w;
+    uint32_t h = source.h;
+
+    return convoluteImage(w, h, source.pixels, kernel, edgePolicy, 0, h);
+}
+
+Image8 runLocal2DFilterWithStdThread(Image8 image, Kernel kernel) {
     unsigned threadCount = thread::hardware_concurrency();
 
-    log("[PointFilter] Parallelizing with C++ std::thread");
-    log("[PointFilter] Starting " + to_string(threadCount) + " threads");
+    log("[Local2DFilter] Parallelizing with C++ std::thread");
+    log("[Local2DFilter] Starting " + to_string(threadCount) + " threads");
 
     uint32_t w = image.w;
     uint32_t h = image.h;
@@ -63,8 +119,8 @@ Image8 runPointFilterWithStdThread(Image8 image, PointFilter filter) {
         rgb *begin = pixels + offset;
         rgb *end = pixels + offset + limit;
 
-        thread *t = new thread([begin, end, &image, filter]() {
-            transform(begin, end, begin, filter);
+        thread *t = new thread([begin, end, &image, kernel]() {
+            //transform(begin, end, begin, kernel);
         });
         threads.push_back(t);
     }
@@ -76,11 +132,11 @@ Image8 runPointFilterWithStdThread(Image8 image, PointFilter filter) {
     return move(image);
 }
 
-Image8 runPointFilterWithOpenMP(Image8 image, PointFilter filter) {
+Image8 runLocal2DFilterWithOpenMP(Image8 image, Kernel kernel) {
     int threadCount = omp_get_max_threads();
 
-    log("[PointFilter] Parallelizing with OpenMP");
-    log("[PointFilter] Starting " + to_string(threadCount) + " threads");
+    log("[Local2DFilter] Parallelizing with OpenMP");
+    log("[Local2DFilter] Starting " + to_string(threadCount) + " threads");
 
     uint32_t w = image.w;
     uint32_t h = image.h;
@@ -101,17 +157,17 @@ Image8 runPointFilterWithOpenMP(Image8 image, PointFilter filter) {
         rgb *begin = pixels + offset;
         rgb *end = pixels + offset + limit;
 
-        transform(begin, end, begin, filter);
+        //transform(begin, end, begin, kernel);
     }
 
     return move(image);
 }
 
-static Image8 runPointFilterWithMPIMaster(Image8 image, PointFilter filter) {
+static Image8 runLocal2DFilterWithMPIMaster(Image8 image, Kernel kernel) {
     int processCount = mpiHelper.processCount();
 
-    log("[PointFilter] Parallelizing with MPIHelper");
-    log("[PointFilter] Using " + to_string(processCount) + " processes");
+    log("[Local2DFilter] Parallelizing with MPIHelper");
+    log("[Local2DFilter] Using " + to_string(processCount) + " processes");
 
     uint32_t w = image.w;
     uint32_t h = image.h;
@@ -142,7 +198,7 @@ static Image8 runPointFilterWithMPIMaster(Image8 image, PointFilter filter) {
     rgb *masterBegin = pixels + masterOffset;
     rgb *masterEnd = pixels + masterOffset + masterLimit;
 
-    transform(masterBegin, masterEnd, masterBegin, filter);
+    //transform(masterBegin, masterEnd, masterBegin, kernel);
 
     for (int slaveId = 1; slaveId < processCount; slaveId++) {
         size_t offset = pixelsPerThread * slaveId;
@@ -161,7 +217,7 @@ static Image8 runPointFilterWithMPIMaster(Image8 image, PointFilter filter) {
     return move(image);
 }
 
-static void runPointFilterWithMPISlave(PointFilter filter) {
+static void runLocal2DFilterWithMPISlave(Kernel kernel) {
     int slaveId = mpiHelper.myProcessId();
     int processCount = mpiHelper.processCount();
 
@@ -187,26 +243,27 @@ static void runPointFilterWithMPISlave(PointFilter filter) {
 
     mpiHelper.receiveFromMaster(slaveBegin, limit);
 
-    transform(slaveBegin, slaveEnd, slaveBegin, filter);
+    //transform(slaveBegin, slaveEnd, slaveBegin, kernel);
 
     mpiHelper.sendToMaster(slaveBegin, limit);
 
     delete pixels;
 }
 
-Image8 runPointFilterWithMPI(Image8 image, PointFilter filter) {
+Image8 runLocal2DFilterWithMPI(Image8 image, Kernel kernel) {
     int processId = mpiHelper.myProcessId();
     if (processId == MPI_MASTER_PROCESS_ID) {
-        return runPointFilterWithMPIMaster(move(image), filter);
+        return runLocal2DFilterWithMPIMaster(move(image), kernel);
     } else {
-        runPointFilterWithMPISlave(filter);
+        runLocal2DFilterWithMPISlave(kernel);
         return move(image);
     }
 }
 
-Image8 runPointFilter(Image8 image, PointFilter filter,
-                      ParallelismPolicy policy) {
-    if (policy != PP_MPI) {
+Image8 runLocal2DFilter(Image8 image, Kernel kernel,
+                        ParallelismPolicy parallelismPolicy,
+                        EdgePolicy edgePolicy) {
+    if (parallelismPolicy != PP_MPI) {
         // MPI spawns multiple processes for us even if we're not going to use
         // them in this filter. Only let one process tackle filtering this
         // image.
@@ -216,15 +273,17 @@ Image8 runPointFilter(Image8 image, PointFilter filter,
         }
     }
 
-    switch (policy) {
+    assert((kernel.dimension & 1) == 1);
+
+    switch (parallelismPolicy) {
     case PP_SINGLE_THREAD:
-        return runPointFilterSingleThreaded(move(image), filter);
+        return runLocal2DFilterSingleThreaded(move(image), kernel, edgePolicy);
     case PP_CXX_STD_THREAD:
-        return runPointFilterWithStdThread(move(image), filter);
+        return runLocal2DFilterWithStdThread(move(image), kernel);
     case PP_OPEN_MP:
-        return runPointFilterWithOpenMP(move(image), filter);
+        return runLocal2DFilterWithOpenMP(move(image), kernel);
     case PP_MPI:
-        return runPointFilterWithMPI(move(image), filter);
+        return runLocal2DFilterWithMPI(move(image), kernel);
     default:
         throw "Unknown parallelism policy";
     }

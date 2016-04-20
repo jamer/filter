@@ -17,6 +17,8 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fopenmp")
 set(SOURCE_FILES
   src/Color.cpp
   src/DirectoryTransform.cpp
+  src/filters/Local2DFilter.cpp
+  src/filters/local-2d-kernels/BoxBlur3.cpp
   src/filters/PointFilter.cpp
   src/filters/point-filters/ColorOverlay.cpp
   src/filters/point-filters/Fill.cpp

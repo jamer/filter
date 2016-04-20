@@ -19,6 +19,12 @@ Image8::Image8() {
     pixels = nullptr;
 }
 
+Image8::Image8(uint32_t w, uint32_t h) {
+    this->w = w;
+    this->h = h;
+    pixels = reinterpret_cast<rgb *>(malloc(sizeof(rgb) * w * h));
+}
+
 Image8::Image8(string filename) {
     int width, height, components;
     stbi_uc *data;

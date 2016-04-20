@@ -18,6 +18,13 @@ rgb rgb::operator+(const rgb& other) const {
     return pixel;
 }
 
+rgb& rgb::operator+=(const rgb& other) {
+    r += other.r;
+    g += other.g;
+    b += other.b;
+    return *this;
+}
+
 // From https://stackoverflow.com/questions/3018313/algorithm-to-convert-rgb-to-hsv-and-hsv-to-rgb-in-range-0-255-for-both#6930407
 hsv rgb::toHSV()
 {
