@@ -6,7 +6,7 @@
 #include "Image8.h"
 #include "Log.h"
 #include "filters/Local2DFilter.h"
-#include "filters/local-2d-kernels/BoxBlur3.h"
+#include "filters/local-2d-kernels/BoxBlur.h"
 #include "filters/PointFilter.h"
 #include "filters/point-filters/ColorOverlay.h"
 #include "filters/point-filters/Saturation.h"
@@ -30,7 +30,8 @@ Image8 boxBlur(Image8 img) {
     ParallelismPolicy parallelismPolicy = PP_SINGLE_THREAD;
     EdgePolicy edgePolicy = EP_CLAMP;
 
-    return runLocal2DFilter(move(img), boxBlur3, parallelismPolicy, edgePolicy);
+    Kernel boxBlur = makeBoxBlur(1);
+    return runLocal2DFilter(move(img), boxBlur, parallelismPolicy, edgePolicy);
 }
 
 int main(int argc, char **argv) {
