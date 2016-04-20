@@ -9,8 +9,8 @@
 #include "../Image8.h"
 
 enum ParallelismPolicy {
-    PP_SINGLE_THREADED,
-    PP_MULTI_THREADED,
+    PP_SINGLE_THREAD,
+    PP_CXX_STD_THREAD,
     PP_OPEN_MP
 };
 

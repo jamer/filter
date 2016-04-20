@@ -5,11 +5,13 @@
 #include <omp.h>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "../Log.h"
 #include "PointFilter.h"
 
+using std::move;
 using std::string;
 using std::thread;
 using std::transform;
@@ -28,7 +30,7 @@ Image8 runPointFilterSingleThreaded(Image8 image, PointFilter filter) {
 
     transform(begin, end, begin, filter);
 
-    return std::move(image);
+    return move(image);
 }
 
 Image8 runPointFilterMultiThreadedWithSharedMemory(Image8 image,
@@ -69,7 +71,7 @@ Image8 runPointFilterMultiThreadedWithSharedMemory(Image8 image,
         t->join();
     }
 
-    return std::move(image);
+    return move(image);
 }
 
 Image8 runPointFilterWithOpenMP(Image8 image, PointFilter filter) {
@@ -101,19 +103,18 @@ Image8 runPointFilterWithOpenMP(Image8 image, PointFilter filter) {
         transform(begin, end, begin, filter);
     }
 
-    return std::move(image);
+    return move(image);
 }
 
 Image8 runPointFilter(Image8 image, PointFilter filter,
                       ParallelismPolicy policy) {
     switch (policy) {
-    case PP_SINGLE_THREADED:
-        return runPointFilterSingleThreaded(std::move(image), filter);
-    case PP_MULTI_THREADED:
-        return runPointFilterMultiThreadedWithSharedMemory(std::move(image),
-                                                           filter);
+    case PP_SINGLE_THREAD:
+        return runPointFilterSingleThreaded(move(image), filter);
+    case PP_CXX_STD_THREAD:
+        return runPointFilterMultiThreadedWithSharedMemory(move(image), filter);
     case PP_OPEN_MP:
-        return runPointFilterWithOpenMP(std::move(image), filter);
+        return runPointFilterWithOpenMP(move(image), filter);
     default:
         throw "Unknown parallelism policy";
     }
