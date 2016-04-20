@@ -23,23 +23,29 @@ using std::transform;
 using std::to_string;
 using std::vector;
 
+static int32_t clamp(int32_t value, int32_t min, int32_t max) {
+    if (value < min) {
+        return min;
+    }
+    if (value > max) {
+        return max;
+    }
+    return value;
+}
+
 static rgb getPixel(uint32_t w, uint32_t h, rgb *source, EdgePolicy edgePolicy,
                     int32_t x, int32_t y) {
-    int32_t inBoundsX = x;
-    int32_t inBoundsY = y;
-    inBoundsX = max(inBoundsX, 0);
-    inBoundsY = max(inBoundsY, 0);
-    inBoundsX = min(inBoundsX, static_cast<int32_t>(w) - 1);
-    inBoundsY = min(inBoundsY, static_cast<int32_t>(h) - 1);
+    int32_t inBoundsX = clamp(x, 0, static_cast<int32_t>(w) - 1);
+    int32_t inBoundsY = clamp(y, 0, static_cast<int32_t>(h) - 1);
 
     if (x != inBoundsX || y != inBoundsY) {
         switch (edgePolicy) {
         case EP_CLAMP:
             return source[inBoundsY * w + inBoundsX];
         case EP_WRAP:
-            // TODO(pdm): Unimplemented due to considerations with
-            //            multiprocessing.
-            return rgb{0, 0, 0};
+            inBoundsX %= w;
+            inBoundsY %= h;
+            return source[inBoundsY * w + inBoundsX];
         case EP_CLIP:
             return rgb{0, 0, 0};
         }

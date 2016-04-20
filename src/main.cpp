@@ -22,7 +22,7 @@ Image8 appleFrostedGlass(Image8 image) {
     Image8 desaturatedImage = runPointFilter(move(img), desaturate, policy);
     */
 
-    Kernel blur = makeGaussianBlur(12, 12);
+    Kernel blur = makeGaussianBlur(12, 144);
     Image8 blurredImage = runLocal2DFilter(move(image), blur, parallelismPolicy,
                                            edgePolicy);
 
