@@ -78,17 +78,16 @@ static rgb convolutePixel(uint32_t w, uint32_t h, rgb *source,
     };
 }
 
-static Image8 convoluteImage(uint32_t w, uint32_t h, rgb *source,
-                             const Kernel& kernel, EdgePolicy edgePolicy,
-                             uint32_t initialY, uint32_t finalY) {
-    Image8 destination(w, h);
+static void convoluteImage(uint32_t w, uint32_t h,
+                           rgb *source, rgb *destination,
+                           const Kernel& kernel, EdgePolicy edgePolicy,
+                           uint32_t initialY, uint32_t finalY) {
     for (uint32_t y = initialY; y < finalY; y++) {
         for (uint32_t x = 0; x < w; x++) {
-            destination.pixels[y * w + x] = convolutePixel(w, h, source, kernel,
-                                                           edgePolicy, x, y);
+            destination[y * w + x] = convolutePixel(w, h, source, kernel,
+                                                    edgePolicy, x, y);
         }
     }
-    return move(destination);
 }
 
 Image8 runLocal2DFilterSingleThreaded(Image8 source, Kernel kernel,
@@ -98,37 +97,42 @@ Image8 runLocal2DFilterSingleThreaded(Image8 source, Kernel kernel,
     uint32_t w = source.w;
     uint32_t h = source.h;
 
-    return convoluteImage(w, h, source.pixels, kernel, edgePolicy, 0, h);
+    Image8 destination(w, h);
+    convoluteImage(w, h, source.pixels, destination.pixels, kernel, edgePolicy,
+                   0, h);
+    return move(destination);
 }
 
-Image8 runLocal2DFilterWithStdThread(Image8 image, Kernel kernel) {
+Image8 runLocal2DFilterWithStdThread(Image8 source, Kernel kernel,
+                                     EdgePolicy edgePolicy) {
     unsigned threadCount = thread::hardware_concurrency();
 
     log("[Local2DFilter] Parallelizing with C++ std::thread");
     log("[Local2DFilter] Starting " + to_string(threadCount) + " threads");
 
-    uint32_t w = image.w;
-    uint32_t h = image.h;
-    rgb *pixels = image.pixels;
+    uint32_t w = source.w;
+    uint32_t h = source.h;
+    rgb *sourcePixels = source.pixels;
 
-    size_t pixelCount = w * h;
-    size_t pixelsPerThread = pixelCount / threadCount;
+    Image8 destination(w, h);
+    rgb *destinationPixels = destination.pixels;
+
+    uint32_t rowsPerThread = h / threadCount;
 
     vector<thread *> threads;
 
     for (int threadId = 0; threadId < threadCount; threadId++) {
-        size_t offset = pixelsPerThread * threadId;
-        size_t limit = pixelsPerThread;
+        uint32_t offset = rowsPerThread * threadId;
+        uint32_t limit = rowsPerThread;
 
         if (threadId == threadCount - 1) {
-           limit = pixelCount - offset;
+           limit = h - offset;
         }
 
-        rgb *begin = pixels + offset;
-        rgb *end = pixels + offset + limit;
-
-        thread *t = new thread([begin, end, &image, kernel]() {
-            //transform(begin, end, begin, kernel);
+        thread *t = new thread([w, h, sourcePixels, destinationPixels, kernel,
+                                edgePolicy, offset, limit]() {
+            return convoluteImage(w, h, sourcePixels, destinationPixels,
+                                  kernel, edgePolicy, offset, offset + limit);
         });
         threads.push_back(t);
     }
@@ -137,7 +141,7 @@ Image8 runLocal2DFilterWithStdThread(Image8 image, Kernel kernel) {
         t->join();
     }
 
-    return move(image);
+    return move(destination);
 }
 
 Image8 runLocal2DFilterWithOpenMP(Image8 image, Kernel kernel) {
@@ -287,7 +291,7 @@ Image8 runLocal2DFilter(Image8 image, Kernel kernel,
     case PP_SINGLE_THREAD:
         return runLocal2DFilterSingleThreaded(move(image), kernel, edgePolicy);
     case PP_CXX_STD_THREAD:
-        return runLocal2DFilterWithStdThread(move(image), kernel);
+        return runLocal2DFilterWithStdThread(move(image), kernel, edgePolicy);
     case PP_OPEN_MP:
         return runLocal2DFilterWithOpenMP(move(image), kernel);
     case PP_MPI:

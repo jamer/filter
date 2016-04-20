@@ -101,7 +101,9 @@ Image8 runPointFilterWithOpenMP(Image8 image, PointFilter filter) {
         rgb *begin = pixels + offset;
         rgb *end = pixels + offset + limit;
 
-        transform(begin, end, begin, filter);
+        thread *t = new thread([begin, end, &image, filter]() {
+            transform(begin, end, begin, filter);
+        });
     }
 
     return move(image);
