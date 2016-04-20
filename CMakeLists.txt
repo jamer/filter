@@ -21,6 +21,7 @@ set(SOURCE_FILES
   src/filters/Local2DFilter.cpp
   src/filters/local-2d-kernels/BoxBlur.cpp
   src/filters/local-2d-kernels/GaussianBlur.cpp
+  src/filters/local-2d-kernels/UnsharpenMask3.cpp
   src/filters/PointFilter.cpp
   src/filters/point-filters/ColorOverlay.cpp
   src/filters/point-filters/Fill.cpp
